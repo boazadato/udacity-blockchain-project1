@@ -35,7 +35,7 @@ class Blockchain {
      */
     async initializeChain() {
         if( this.height === -1){
-            let block = new BlockClass.Block({data: 'Genesis Block'});
+            const block = new BlockClass.Block({data: 'Genesis Block'});
             await this._addBlock(block);
         }
     }
@@ -62,9 +62,18 @@ class Blockchain {
      * that this method is a private method. 
      */
     _addBlock(block) {
-        let self = this;
         return new Promise(async (resolve, reject) => {
-           
+            block.height = this.height + 1;
+            block.timeStamp = new Date().getTime().toString().slice(0,-3);
+
+            if (this.height > -1) {
+                const lastBlock = this.chain[this.height];
+                block.previousBlockHash = lastBlock.hash;
+            }
+            block.hash = SHA256(JSON.stringify(block)).toString();
+            this.chain.push(block);
+            this.height += 1;
+            resolve(block)
         });
     }
 
@@ -78,7 +87,11 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            
+            resolve([
+                address,
+                new Date().getTime().toString().slice(0,-3),
+                'starRegistry'
+            ].join(':'))
         });
     }
 
@@ -100,9 +113,21 @@ class Blockchain {
      * @param {*} star 
      */
     submitStar(address, message, signature, star) {
-        let self = this;
         return new Promise(async (resolve, reject) => {
-            
+            const givenTime = parseInt(message.split(':')[1]);
+            const currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+            if (currentTime - givenTime > 60 * 5) {
+                reject('message too old')
+            } else {
+            //    4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
+                bitcoinMessage.verify(message, address, signature);
+                const newBlock = new BlockClass.Block({
+                    star,
+                    address
+                });
+
+                resolve(await this._addBlock(newBlock))
+            }
         });
     }
 
@@ -113,9 +138,14 @@ class Blockchain {
      * @param {*} hash 
      */
     getBlockByHash(hash) {
-        let self = this;
         return new Promise((resolve, reject) => {
-           
+            const block = this.chain.find(p => p.hash === hash);
+            if (block) {
+                resolve(block);
+            } else {
+                reject()
+            }
+
         });
     }
 
@@ -143,10 +173,12 @@ class Blockchain {
      * @param {*} address 
      */
     getStarsByWalletAddress (address) {
-        let self = this;
-        let stars = [];
-        return new Promise((resolve, reject) => {
-            
+        return new Promise(async (resolve, reject) => {
+            const stars = this.chain
+                .map(async block => await block.getBData())
+                .filter(blockData => blockData.address === address)
+                .map(blockData => blockData.star)
+            resolve(stars)
         });
     }
 
@@ -157,10 +189,28 @@ class Blockchain {
      * 2. Each Block should check the with the previousBlockHash
      */
     validateChain() {
-        let self = this;
-        let errorLog = [];
         return new Promise(async (resolve, reject) => {
-            
+            const errorLog = [];
+            for (let i = 0; i < this.chain.length; i++){
+                const block = this.chain[i];
+                if (await block.validate()) {
+                    errorLog.push(`block ${block.height} as been tampered`);
+                }
+
+                if (i === 0) {
+                    if (block.previousBlockHash !== null){
+                        errorLog.push('genensis block points to prev hash!')
+                    }
+                } else {
+                    const prevBlock = this.chain[i - 1];
+                    if (block.previousBlockHash !== prevBlock.hash) {
+                        errorLog.push(`block ${block.height} points to wrong prev hash - 
+                        should be ${prevBlock.hash} (of block ${prevBlock.height}) but its ${block.previousBlockHash}`)
+                    }
+                }
+            }
+
+            resolve(errorLog);
         });
     }
 
