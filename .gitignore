@@ -13,3 +13,9 @@ storybook-static/
 /schema.graphql
 .parcel-cache/
 coverage/
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/project-private-blockchain.iml
+/.idea/vcs.xml
+/yarn.lock
