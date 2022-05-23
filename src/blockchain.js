@@ -174,8 +174,9 @@ class Blockchain {
      */
     getStarsByWalletAddress (address) {
         return new Promise(async (resolve, reject) => {
-            const stars = this.chain
-                .map(async block => await block.getBData())
+            let stars = this.chain.slice(1) // ignore genesis block
+            stars = await Promise.all(stars.map(block => block.getBData()));
+            stars = stars
                 .filter(blockData => blockData.address === address)
                 .map(blockData => blockData.star)
             resolve(stars)
