@@ -133,7 +133,11 @@ class Blockchain {
                     address
                 });
 
-                resolve(await this._addBlock(newBlock))
+                try {
+                    resolve(await this._addBlock(newBlock))
+                } catch (err) {
+                    reject(err)
+                }
             }
         });
     }
@@ -150,7 +154,7 @@ class Blockchain {
             if (block) {
                 resolve(block);
             } else {
-                reject()
+                reject(`block with hash ${hash} not found`)
             }
 
         });
