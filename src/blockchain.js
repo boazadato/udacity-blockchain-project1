@@ -205,7 +205,7 @@ class Blockchain {
             const errorLog = [];
             for (let i = 0; i < this.chain.length; i++){
                 const block = this.chain[i];
-                if (await block.validate()) {
+                if (!(await block.validate())) {
                     errorLog.push(`block ${block.height} as been tampered`);
                 }
 
