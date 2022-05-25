@@ -37,12 +37,8 @@ class Block {
      */
     validate() {
         return new Promise((resolve, reject) => {
-            // Save in auxiliary variable the current block hash
-            const recordedBlockHash = this.hash;
-            // Recalculate the hash of the Block
-            const recalculatedBlockHash = SHA256(JSON.stringify(this)).toString();
-            // Comparing if the hashes changed
-            resolve(recalculatedBlockHash === recordedBlockHash)
+            const cloneWithoutHash = {...this, hash: null};
+            resolve(this.hash === SHA256(JSON.stringify(cloneWithoutHash)).toString());
         });
     }
 
