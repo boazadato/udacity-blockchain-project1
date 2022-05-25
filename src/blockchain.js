@@ -63,8 +63,15 @@ class Blockchain {
      */
     _addBlock(block) {
         return new Promise(async (resolve, reject) => {
+            const chainValid = await this.validateChain();
+            if (chainValid.length > 0){
+                // chain has been tampered
+                reject(chainValid);
+                return;
+            }
+
             block.height = this.height + 1;
-            block.timeStamp = new Date().getTime().toString().slice(0,-3);
+            block.timeStamp = new Date().getTime().toString().slice(0, -3);
 
             if (this.height > -1) {
                 const lastBlock = this.chain[this.height];
